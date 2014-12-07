@@ -20,18 +20,15 @@
       }
 
       .countries svg {
-        width: 60px;
-        height: 10px;
+        width: 100px;
+        height: 100px;
         padding-right: 10px;
         font-size: 10px; 
         font-family: "Arial";
       }
 
       .countries circle {
-        fill: red;
-        fill-opacity: 1.0;
-        stroke: black;
-        stroke-width: 1.5px;
+        fill-opacity: 0.2;
       }
 
     </style>
@@ -44,16 +41,18 @@
 var map = new google.maps.Map(d3.select("#map").node(), {
   zoom: 2,
   center: new google.maps.LatLng(47.0, 2.0),
-  disableDefaultUI: true,
-  disableDoubleClickZoom: true,
-  draggable: false,
-  scrollwheel: false,
+  disableDefaultUI: false,
+  disableDoubleClickZoom: false,
+  draggable: true,
+  scrollwheel: true,
   mapTypeId: google.maps.MapTypeId.TERRAIN
 });
 
 // Load the forest area % per country data. When the data comes back, create an overlay. 
 d3.csv("data/forestarea.csv", function(error,data) {
   var overlay = new google.maps.OverlayView();
+  var locations = data.map( function(d) {return [ +d["Latitude"], +d["Longitude"] ]; });
+  var forestarea = data.map( function(f) { return [ +f["1990"], +f["1991"], +f["1992"], +f["1993"], +f["1994"], +f["1995"], +f["1996"], +f["1997"], +f["1998"], +f["1999"], +f["2000"], +f["2001"], +f["2002"], +f["2003"], +f["2004"], +f["2005"], +f["2006"], +f["2007"], +f["2008"], +f["2009"], +f["2010"], +f["2011"], +f["2012"] ]; });
 
   // Add the container when the overlay is added to the map.
   overlay.onAdd = function() {
@@ -66,7 +65,57 @@ d3.csv("data/forestarea.csv", function(error,data) {
           padding = 10;
 
       var marker = layer.selectAll("svg")
-          .data(d3.entries(data))
+          .data(d3.entries(locations))
+          .each(transform) // update existing markers
+        .enter().append("svg:svg")
+          .each(transform)
+          .attr("class", "marker");
+
+      // Draw a tree, scale based on forest area %
+      marker.append("svg:circle")
+          .attr("fill","green")
+          .attr("r", 10.0)
+          .attr("cx", padding)
+          .attr("cy", padding);
+
+
+      // Add a label.
+   /*   marker.append("svg:text")
+          .attr("x", padding + 7)
+          .attr("y", padding)
+          .attr("dy", ".31em")
+          .text(function(d) { return d.key; });
+*/
+      function transform(d) {
+        d = new google.maps.LatLng(d.value[0], d.value[1]);
+        d = projection.fromLatLngToDivPixel(d);
+        return d3.select(this)
+            .style("left", (d.x - padding) + "px")
+            .style("top", (d.y - padding) + "px");
+      }
+    };
+  };
+
+  // Bind our overlay to the map…
+  overlay.setMap(map);
+});
+/*
+d3.csv("data/co2emissions.csv", function(error,data) {
+  var overlay = new google.maps.OverlayView();
+  var co2data = data.map( function(d) { return [ +d["1990"], +d["1991"], +d["1992"], +d["1993"], +d["1994"], +d["1995"], +d["1996"], +d["1997"], +d["1998"], +d["1999"], +d["2000"], +d["2001"], +d["2002"], +d["2003"], +d["2004"], +d["2005"], +d["2006"], +d["2007"], +d["2008"], +d["2009"], +d["2010"], +d["2011"], +d["2012"] ]; });
+
+  // Add the container when the overlay is added to the map.
+  overlay.onAdd = function() {
+    var layer = d3.select(this.getPanes().overlayLayer).append("div")
+        .attr("class", "countries");
+
+    // Draw each marker as a separate SVG element.
+    overlay.draw = function() {
+      var projection = this.getProjection(),
+          padding = 10;
+
+      var marker = layer.selectAll("svg")
+          .data(d3.entries(co2data))
           .each(transform) // update existing markers
         .enter().append("svg:svg")
           .each(transform)
@@ -79,25 +128,25 @@ d3.csv("data/forestarea.csv", function(error,data) {
           .attr("cy", padding);
 
       // Add a label.
-      marker.append("svg:text")
+   /*   marker.append("svg:text")
           .attr("x", padding + 7)
           .attr("y", padding)
           .attr("dy", ".31em")
           .text(function(d) { return d.key; });
-
-      function transform(d) {
+*/
+      /*function transform(d) {
         d = new google.maps.LatLng(d.value[1], d.value[0]);
         d = projection.fromLatLngToDivPixel(d);
         return d3.select(this)
             .style("left", (d.x - padding) + "px")
             .style("top", (d.y - padding) + "px");
-      }
-    };
-  };
+      } */
+    //};
+  //};
 
   // Bind our overlay to the map…
-  overlay.setMap(map);
-});
+ // overlay.setMap(map);
+//});*/
 
     </script>
   </body>
