@@ -20,18 +20,15 @@
       }
 
       .countries svg {
-        width: 60px;
-        height: 10px;
+        width: 500px;
+        height: 500px;
         padding-right: 10px;
         font-size: 10px; 
         font-family: "Arial";
       }
 
       .countries circle {
-        fill: red;
-        fill-opacity: 1.0;
-        stroke: black;
-        stroke-width: 1.5px;
+        fill-opacity: 0.2;
       }
 
     </style>
@@ -44,60 +41,82 @@
 var map = new google.maps.Map(d3.select("#map").node(), {
   zoom: 2,
   center: new google.maps.LatLng(47.0, 2.0),
-  disableDefaultUI: true,
-  disableDoubleClickZoom: true,
-  draggable: false,
-  scrollwheel: false,
+  disableDefaultUI: false,
+  disableDoubleClickZoom: false,
+  draggable: true,
+  scrollwheel: true,
   mapTypeId: google.maps.MapTypeId.TERRAIN
 });
 
+
+var fBase, cBase, fCurr, cCurr;
+
 // Load the forest area % per country data. When the data comes back, create an overlay. 
-d3.csv("data/forestarea.csv", function(error,data) {
-  var overlay = new google.maps.OverlayView();
+d3.csv("data/forestation.csv", function(error1,data1) {
+  // load co2 emissions data
+  d3.csv("data/co2emissions2.csv", function(error2,data2) {
+    var overlay = new google.maps.OverlayView();
+    var locations = data2.map( function(d) {return [ +d["Latitude"], +d["Longitude"] ]; });
+    fBase = 183.9;
+    cBase = 4.209859236;
+    fCurr = 176.4;
+    cCurr = 4.950825137;
 
-  // Add the container when the overlay is added to the map.
-  overlay.onAdd = function() {
-    var layer = d3.select(this.getPanes().overlayLayer).append("div")
-        .attr("class", "countries");
+    // Add the container when the overlay is added to the map.
+    overlay.onAdd = function() {
+      var layer1 = d3.select(this.getPanes().overlayLayer).append("div")
+          .attr("class", "countries");
+      var layer2 = d3.select(this.getPanes().overlayLayer).append("div")
+          .attr("class", "countries");    
 
-    // Draw each marker as a separate SVG element.
-    overlay.draw = function() {
-      var projection = this.getProjection(),
-          padding = 10;
+      // Draw each marker as a separate SVG element.
+      overlay.draw = function() {
+        var projection = this.getProjection(),
+            padding = 10;
 
-      var marker = layer.selectAll("svg")
-          .data(d3.entries(data))
-          .each(transform) // update existing markers
-        .enter().append("svg:svg")
-          .each(transform)
-          .attr("class", "marker");
+        var marker2 = layer2.selectAll("svg")
+            .data(d3.entries(locations))
+            .each(transform) // update existing markers
+          .enter().append("svg:svg")
+            .each(transform)
+            .attr("class", "marker");
 
-      // Add a circle.
-      marker.append("svg:circle")
-          .attr("r", 4.5)
-          .attr("cx", padding)
-          .attr("cy", padding);
+        var marker1 = layer1.selectAll("svg")
+            .data(d3.entries(locations))
+            .each(transform) // update existing markers
+          .enter().append("svg:svg")
+            .each(transform)
+            .attr("class", "marker");
 
-      // Add a label.
-      marker.append("svg:text")
-          .attr("x", padding + 7)
-          .attr("y", padding)
-          .attr("dy", ".31em")
-          .text(function(d) { return d.key; });
+        // Draw co2, scale based on co2 emission
+        marker2.append("svg:circle")
+            .attr("fill","red")
+            .attr("r", 5.0 * (cCurr/cBase))
+            .attr("cx", padding)
+            .attr("cy", padding); 
 
-      function transform(d) {
-        d = new google.maps.LatLng(d.value[1], d.value[0]);
-        d = projection.fromLatLngToDivPixel(d);
-        return d3.select(this)
-            .style("left", (d.x - padding) + "px")
-            .style("top", (d.y - padding) + "px");
-      }
+        // Draw a tree, scale based on forest area %
+        marker1.append("svg:circle")
+            .attr("fill","green")
+            .attr("r", 10.0 * (fCurr/fBase))
+            .attr("cx", padding)
+            .attr("cy", padding);   
+
+        function transform(d) {
+          d = new google.maps.LatLng(d.value[0], d.value[1]);
+          d = projection.fromLatLngToDivPixel(d);
+          return d3.select(this)
+              .style("left", (d.x - padding) + "px")
+              .style("top", (d.y - padding) + "px");
+        }
+      };
     };
-  };
 
-  // Bind our overlay to the map…
-  overlay.setMap(map);
+    // Bind our overlay to the map…
+    overlay.setMap(map);
+  });  
 });
+
 
     </script>
   </body>
